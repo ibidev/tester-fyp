@@ -22,6 +22,21 @@ const Rick3DViewer = ({
     talk: [], // Will store multiple talking animations
     thinking: [] // Will store multiple thinking animations
   });
+  
+  // Ensure animationsRef is always properly initialized
+  if (!animationsRef.current) {
+    animationsRef.current = { idle: [], talk: [], thinking: [] };
+  }
+  if (!Array.isArray(animationsRef.current.idle)) {
+    animationsRef.current.idle = [];
+  }
+  if (!Array.isArray(animationsRef.current.talk)) {
+    animationsRef.current.talk = [];
+  }
+  if (!Array.isArray(animationsRef.current.thinking)) {
+    animationsRef.current.thinking = [];
+  }
+  
   const currentActionRef = useRef(null);
   const controlsRef = useRef(null);
   
@@ -76,17 +91,35 @@ const Rick3DViewer = ({
 
   // Function to select a random animation from a category
   const getRandomAnimation = (category) => {
-    const animations = animationsRef.current[category];
-    if (!animations || animations.length === 0) {
-      console.warn(`No animations found for category: ${category}`);
+    try {
+      // Ensure animationsRef.current exists and has the category
+      if (!animationsRef.current || !animationsRef.current[category]) {
+        console.warn(`animationsRef.current or category "${category}" not initialized`);
+        return null;
+      }
+      
+      const animations = animationsRef.current[category];
+      
+      // Ensure animations is an array
+      if (!Array.isArray(animations)) {
+        console.warn(`Category "${category}" is not an array:`, animations);
+        return null;
+      }
+      
+      if (animations.length === 0) {
+        console.warn(`No animations found for category: ${category}`);
+        return null;
+      }
+      
+      const randomIndex = Math.floor(Math.random() * animations.length);
+      return {
+        action: animations[randomIndex],
+        index: randomIndex
+      };
+    } catch (error) {
+      console.error(`Error in getRandomAnimation for category "${category}":`, error);
       return null;
     }
-    
-    const randomIndex = Math.floor(Math.random() * animations.length);
-    return {
-      action: animations[randomIndex],
-      index: randomIndex
-    };
   };
 
   // Function to start an animation properly
