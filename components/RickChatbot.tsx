@@ -10,7 +10,7 @@ const RickChatbot = () => {
   const [pendingMessage, setPendingMessage] = useState(null);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [isThinking, setIsThinking] = useState(false);
-  const [showChatHistory, setShowChatHistory] = useState(false);
+  const [showChatHistory, setShowChatHistory] = useState(true);
   const audioRef = useRef(null);
   const chatHistoryRef = useRef(null);
   const messagesEndRef = useRef(null);
@@ -216,7 +216,13 @@ const RickChatbot = () => {
               </button>
             )}
             
-           
+            <button
+              onClick={toggleChatHistory}
+              className="flex items-center space-x-2 px-4 py-2 bg-black hover:bg-gray-800 text-white rounded-lg transition-colors duration-200 border border-[#ff5e00]"
+            >
+              {showChatHistory ? <X size={16} /> : <MessageSquare size={16} />}
+              <span>{showChatHistory ? 'Hide' : 'Show'} Chat History</span>
+            </button>
           </div>
           
           {/* Chat History - Simplified Implementation */}
