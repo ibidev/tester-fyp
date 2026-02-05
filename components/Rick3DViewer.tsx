@@ -22,21 +22,6 @@ const Rick3DViewer = ({
     talk: [], // Will store multiple talking animations
     thinking: [] // Will store multiple thinking animations
   });
-  
-  // Ensure animationsRef is always properly initialized
-  if (!animationsRef.current) {
-    animationsRef.current = { idle: [], talk: [], thinking: [] };
-  }
-  if (!Array.isArray(animationsRef.current.idle)) {
-    animationsRef.current.idle = [];
-  }
-  if (!Array.isArray(animationsRef.current.talk)) {
-    animationsRef.current.talk = [];
-  }
-  if (!Array.isArray(animationsRef.current.thinking)) {
-    animationsRef.current.thinking = [];
-  }
-  
   const currentActionRef = useRef(null);
   const controlsRef = useRef(null);
   
@@ -92,17 +77,21 @@ const Rick3DViewer = ({
   // Function to select a random animation from a category
   const getRandomAnimation = (category) => {
     try {
-      // Ensure animationsRef.current exists and has the category
-      if (!animationsRef.current || !animationsRef.current[category]) {
-        console.warn(`animationsRef.current or category "${category}" not initialized`);
+      if (!animationsRef.current) {
+        console.warn('animationsRef.current is null');
+        return null;
+      }
+      
+      if (!animationsRef.current[category]) {
+        console.warn(`Category "${category}" does not exist`);
         return null;
       }
       
       const animations = animationsRef.current[category];
       
-      // Ensure animations is an array
       if (!Array.isArray(animations)) {
-        console.warn(`Category "${category}" is not an array:`, animations);
+        console.warn(`Category "${category}" is not an array, reinitializing`);
+        animationsRef.current[category] = [];
         return null;
       }
       
@@ -117,7 +106,7 @@ const Rick3DViewer = ({
         index: randomIndex
       };
     } catch (error) {
-      console.error(`Error in getRandomAnimation for category "${category}":`, error);
+      console.error(`Error in getRandomAnimation:`, error);
       return null;
     }
   };
@@ -298,54 +287,69 @@ const Rick3DViewer = ({
             thinking: []
           };
           
-          // Process all animations
-          gltf.animations.forEach((clip, index) => {
-            console.log(`Animation ${index}: "${clip.name}" (duration: ${clip.duration}s)`);
-            
-            const action = mixer.clipAction(clip);
-            action.setLoop(THREE.LoopRepeat);
-            
-            // Store by name and index for reference
-            animationsRef.current[`clip_${index}`] = action;
-            if (clip.name) {
-              animationsRef.current[clip.name] = action;
-            }
-            
-            // Categorize animations based on their names
-            const lowerName = clip.name.toLowerCase();
-            
-            // Identify idle animations (idle1, idle2, idle3)
-            if (lowerName.includes('idle')) {
-              animationsRef.current.idle.push(action);
-              console.log(`Added "${clip.name}" as idle animation`);
-            }
-            
-            // Identify talk animations (talking1, talking2, talking3)
-            else if (lowerName.includes('talk')) {
-              animationsRef.current.talk.push(action);
-              console.log(`Added "${clip.name}" as talk animation`);
-            }
-            
-            // Identify thinking animations (thinking1, thinking2)
-            else if (lowerName.includes('think')) {
-              animationsRef.current.thinking.push(action);
-              console.log(`Added "${clip.name}" as thinking animation`);
-            }
-            
-            // If we couldn't categorize it, try to infer from index
-            else if (index >= 0 && index < 3) {
-              animationsRef.current.idle.push(action);
-              console.log(`Added animation ${index} as idle animation (by index)`);
-            }
-            else if (index >= 3 && index < 6) {
-              animationsRef.current.talk.push(action);
-              console.log(`Added animation ${index} as talk animation (by index)`);
-            }
-            else if (index >= 6) {
-              animationsRef.current.thinking.push(action);
-              console.log(`Added animation ${index} as thinking animation (by index)`);
-            }
-          });
+          // Process all animations with error handling
+          try {
+            gltf.animations.forEach((clip, index) => {
+              console.log(`Animation ${index}: "${clip.name}" (duration: ${clip.duration}s)`);
+              
+              const action = mixer.clipAction(clip);
+              action.setLoop(THREE.LoopRepeat);
+              
+              // Store by name and index for reference
+              animationsRef.current[`clip_${index}`] = action;
+              if (clip.name) {
+                animationsRef.current[clip.name] = action;
+              }
+              
+              // Categorize animations based on their names
+              const lowerName = clip.name.toLowerCase();
+              
+              // Safety check: ensure arrays exist before pushing
+              if (!Array.isArray(animationsRef.current.idle)) animationsRef.current.idle = [];
+              if (!Array.isArray(animationsRef.current.talk)) animationsRef.current.talk = [];
+              if (!Array.isArray(animationsRef.current.thinking)) animationsRef.current.thinking = [];
+              
+              // Identify idle animations (idle1, idle2, idle3)
+              if (lowerName.includes('idle')) {
+                animationsRef.current.idle.push(action);
+                console.log(`Added "${clip.name}" as idle animation`);
+              }
+              
+              // Identify talk animations (talking1, talking2, talking3)
+              else if (lowerName.includes('talk')) {
+                animationsRef.current.talk.push(action);
+                console.log(`Added "${clip.name}" as talk animation`);
+              }
+              
+              // Identify thinking animations (thinking1, thinking2)
+              else if (lowerName.includes('think')) {
+                animationsRef.current.thinking.push(action);
+                console.log(`Added "${clip.name}" as thinking animation`);
+              }
+              
+              // If we couldn't categorize it, try to infer from index
+              else if (index >= 0 && index < 3) {
+                animationsRef.current.idle.push(action);
+                console.log(`Added animation ${index} as idle animation (by index)`);
+              }
+              else if (index >= 3 && index < 6) {
+                animationsRef.current.talk.push(action);
+                console.log(`Added animation ${index} as talk animation (by index)`);
+              }
+              else if (index >= 6) {
+                animationsRef.current.thinking.push(action);
+                console.log(`Added animation ${index} as thinking animation (by index)`);
+              }
+            });
+          } catch (animError) {
+            console.error('Error processing animations:', animError);
+            // Reinitialize if something went wrong
+            animationsRef.current = {
+              idle: [],
+              talk: [],
+              thinking: []
+            };
+          }
 
           // Ensure we have animations for all categories with fallbacks
           console.log("Animation categories:", {
