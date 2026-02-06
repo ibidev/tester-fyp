@@ -82,12 +82,18 @@ export default async function handler(req, res) {
 
 
 async function generateAudio(text) {
+  console.log('=== generateAudio called ===');
+  console.log('FISH_API_KEY exists:', !!process.env.FISH_API_KEY);
+  console.log('VERCEL_BLOB_READ_WRITE_TOKEN exists:', !!process.env.VERCEL_BLOB_READ_WRITE_TOKEN);
+  console.log('FISH_MODEL_ID:', process.env.FISH_MODEL_ID);
+  
   if (!process.env.FISH_API_KEY || !process.env.VERCEL_BLOB_READ_WRITE_TOKEN) {
-    console.log('API keys missing');
+    console.log('API keys missing - returning null');
     return null;
   }
 
   try {
+    console.log('Calling Fish Audio API...');
     const response = await fetch('https://api.fish.audio/v1/tts', {
       method: 'POST',
       headers: {
@@ -102,12 +108,19 @@ async function generateAudio(text) {
       }),
     });
 
+    console.log('Fish API response status:', response.status);
+    
     if (!response.ok) {
-      throw new Error(`Fish API error: ${response.status}`);
+      const errorText = await response.text();
+      console.error('Fish API error response:', errorText);
+      throw new Error(`Fish API error: ${response.status} - ${errorText}`);
     }
 
+    console.log('Fish API success, converting to buffer...');
     const buffer = await response.arrayBuffer();
+    console.log('Buffer size:', buffer.byteLength);
 
+    console.log('Uploading to Vercel Blob...');
     // Upload to Vercel Blob
     const blob = await put(
       `rick-response-${Date.now()}.mp3`,
@@ -118,9 +131,11 @@ async function generateAudio(text) {
       }
     );
 
+    console.log('Blob upload successful, URL:', blob.url);
     return blob.url;
   } catch (error) {
-    console.error('Error generating or uploading audio:', error);
+    console.error('Error in generateAudio:', error.message);
+    console.error('Full error:', error);
     return null;
   }
 }
