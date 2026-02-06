@@ -425,12 +425,18 @@ const Rick3DViewer = ({
       // Get delta time
       const delta = clockRef.current.getDelta();
       
-      // Update animations
+      // Update animations if available
       if (mixerRef.current) {
         mixerRef.current.update(delta);
-      } else if (modelRef.current) {
-        // Fallback rotation if no animations
-        modelRef.current.rotation.y += 0.01;
+      }
+      
+      // Add gentle rotation to Rick for visual interest
+      if (modelRef.current) {
+        // Slow rotation on Y axis
+        modelRef.current.rotation.y += 0.003;
+        
+        // Optional: gentle bob up and down
+        modelRef.current.position.y += Math.sin(Date.now() * 0.001) * 0.0005;
       }
       
       // Update controls
