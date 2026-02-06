@@ -1,6 +1,5 @@
 // api/chat.js - Vercel serverless function
 import OpenAI from 'openai';
-import { put } from '@vercel/blob';
 
 // Initialize OpenAI
 const openai = new OpenAI({
@@ -82,45 +81,28 @@ export default async function handler(req, res) {
 
 
 async function generateAudio(text) {
-  if (!process.env.FISH_API_KEY || !process.env.VERCEL_BLOB_READ_WRITE_TOKEN) {
-    console.log('API keys missing');
+  if (!process.env.OPENAI_API_KEY) {
+    console.log('OpenAI API key missing');
     return null;
   }
 
   try {
-    const response = await fetch('https://api.fish.audio/v1/tts', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.FISH_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        text: text,
-        reference_id: process.env.FISH_MODEL_ID || 'f0227f70151e4366965c8ac77c28e9ad',
-        format: 'mp3',
-        mp3_bitrate: 128,
-      }),
+    // Use OpenAI's text-to-speech (no external storage needed!)
+    const mp3 = await openai.audio.speech.create({
+      model: "tts-1",
+      voice: "onyx", // Deep male voice (closest to Rick)
+      input: text,
+      speed: 1.0,
     });
 
-    if (!response.ok) {
-      throw new Error(`Fish API error: ${response.status}`);
-    }
-
-    const buffer = await response.arrayBuffer();
-
-    // Upload to Vercel Blob
-    const blob = await put(
-      `rick-response-${Date.now()}.mp3`,
-      new Blob([buffer], { type: 'audio/mpeg' }),
-      {
-        access: 'public',
-        token: process.env.VERCEL_BLOB_READ_WRITE_TOKEN
-      }
-    );
-
-    return blob.url;
+    const buffer = Buffer.from(await mp3.arrayBuffer());
+    
+    // Return as base64 data URL (embedded in response)
+    const base64Audio = buffer.toString('base64');
+    return `data:audio/mp3;base64,${base64Audio}`;
+    
   } catch (error) {
-    console.error('Error generating or uploading audio:', error);
+    console.error('Error generating audio with OpenAI TTS:', error);
     return null;
   }
 }
