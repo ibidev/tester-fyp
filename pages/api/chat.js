@@ -84,10 +84,10 @@ export default async function handler(req, res) {
 async function generateAudio(text) {
   console.log('=== generateAudio called ===');
   console.log('FISH_API_KEY exists:', !!process.env.FISH_API_KEY);
-  console.log('VERCEL_BLOB_READ_WRITE_TOKEN exists:', !!process.env.VERCEL_BLOB_READ_WRITE_TOKEN);
+  console.log('BLOB_READ_WRITE_TOKEN exists:', !!process.env.BLOB_READ_WRITE_TOKEN);
   console.log('FISH_MODEL_ID:', process.env.FISH_MODEL_ID);
   
-  if (!process.env.FISH_API_KEY || !process.env.VERCEL_BLOB_READ_WRITE_TOKEN) {
+  if (!process.env.FISH_API_KEY || !process.env.BLOB_READ_WRITE_TOKEN) {
     console.log('API keys missing - returning null');
     return null;
   }
@@ -127,7 +127,7 @@ async function generateAudio(text) {
       new Blob([buffer], { type: 'audio/mpeg' }),
       {
         access: 'public',
-        token: process.env.VERCEL_BLOB_READ_WRITE_TOKEN
+        token: process.env.BLOB_READ_WRITE_TOKEN
       }
     );
 
